@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"path"
 
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 )
@@ -177,7 +178,7 @@ func (am *AssetManager) PrintAsset(asset *api.Asset) {
 	fmt.Println(FormatAssetInfo(asset))
 }
 
-func (am *AssetManager) PrintAssets(assets []api.AssetWithOrders) {
+func (am *AssetManager) PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
 	for _, asset := range assets {
 		name := "[no name set]"
 		status := asset.Status
@@ -195,7 +196,7 @@ func (am *AssetManager) PrintAssets(assets []api.AssetWithOrders) {
 			id = "[no id set]"
 		}
 
-		fmt.Printf("%s: %v (%s)\n", name, status, id)
+		fmt.Printf("%s: %v (%s)\n", name, status, path.Join(ImmutascanURL, collectionAddr, asset.TokenId))
 	}
 }
 
