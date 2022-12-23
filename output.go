@@ -64,7 +64,7 @@ func FormatAssetInfo(asset *api.Asset) string {
 		asset.Metadata["Skin"],
 		asset.Metadata["description"],
 		asset.Metadata["image"],
-		ownerURL,
 		asset.Metadata["game_meta"],
+		ownerURL,
 	)
 }
