@@ -2,40 +2,14 @@ package lib
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"path"
+	"strings"
 
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 )
-
-type AssetStatus string
-
-const (
-	StatusETH                 AssetStatus = "eth"
-	StatusIMX                 AssetStatus = "imx"
-	StatusPreparingWithdrawal AssetStatus = "preparing_withdrawal"
-	StatusWithdrawable        AssetStatus = "withdrawable"
-	StatusBurned              AssetStatus = "burned"
-)
-
-type AssetRarity string
-
-const (
-	RarityCommon    AssetRarity = "Common"
-	RarityRare      AssetRarity = "Rare"
-	RarityEpic      AssetRarity = "Epic"
-	RarityLegendary AssetRarity = "Legendary"
-	RarityMythic    AssetRarity = "Mythic"
-)
-
-type AssetFilter struct {
-	CollectionAddr string
-	CollectionName string
-	Owner          string
-	Rarity         AssetRarity
-	Status         AssetStatus
-}
 
 type AssetManager struct {
 	client IMXClientWrapper
@@ -60,12 +34,25 @@ func (am *AssetManager) GetAsset(ctx context.Context, collectionAddr, id string)
 	return am.client.GetClient().GetAsset(ctx, collectionAddr, id, &includeFees)
 }
 
+// Options from https://docs.x.immutable.com/reference/#/operations/listAssets
 type GetAssetsRequest struct {
-	Assets          []api.AssetWithOrders
-	Before          string
-	CollectionAddr  string
-	Cursor          string
-	MetadataFilters map[string]string
+	BuyOrders           bool
+	Collection          string
+	Direction           string
+	IncludeFees         bool
+	Metadata            []string
+	Name                string
+	OrderBy             string
+	SellOrders          bool
+	Status              string
+	UpdatedMaxTimestamp string
+	UpdatedMinTimestamp string
+	User                string
+
+	// Used internally for recursion
+	Assets []api.AssetWithOrders
+	Cursor string
+	Before string
 }
 
 func (am *AssetManager) GetAssets(
@@ -73,31 +60,7 @@ func (am *AssetManager) GetAssets(
 	cfg *GetAssetsRequest,
 ) ([]api.AssetWithOrders, error) {
 
-	req := am.client.GetClient().NewListAssetsRequest(ctx).
-		Collection(cfg.CollectionAddr).
-		PageSize(MaxAssetsPerReq).
-		OrderBy("updated_at")
-
-	if cfg.Before != "" {
-		req = req.UpdatedMaxTimestamp(cfg.Before)
-	}
-
-	if cfg.Cursor != "" {
-		req = req.Cursor(cfg.Cursor)
-	}
-
-	if cfg.MetadataFilters != nil {
-		log.Printf("skipping metadata since it is not currently supported")
-
-		// The api doesn't like this with { "Rarity": "Legendary" }
-		// metadata, err := json.Marshal(cfg.MetadataFilters)
-		// if err != nil {
-		// 	log.Printf("skipping metadata since it cannot be serialized")
-		// } else {
-		// 	req = req.Metadata(url.QueryEscape(string(metadata)))
-		// }
-	}
-
+	req := am.GetAPIListAssetsRequest(ctx, cfg)
 	resp, err := am.client.GetClient().ListAssets(&req)
 	if err != nil {
 		return nil, err
@@ -127,37 +90,69 @@ func (am *AssetManager) GetAssets(
 	return cfg.Assets, nil
 }
 
-func (am *AssetManager) FilterAssets(assets []api.AssetWithOrders, filter *AssetFilter) []api.AssetWithOrders {
-	var result []api.AssetWithOrders
+func (am *AssetManager) GetAPIListAssetsRequest(ctx context.Context, cfg *GetAssetsRequest) api.ApiListAssetsRequest {
+	req := am.client.GetClient().NewListAssetsRequest(ctx).
+		Collection(cfg.Collection).
+		PageSize(MaxAssetsPerReq)
 
-	for _, asset := range assets {
-		if filter.Rarity != "" {
-			r := asset.Metadata["Rarity"]
-			if _, ok := r.(string); !ok {
-				continue
-			}
-
-			if r.(string) != string(filter.Rarity) {
-				continue
-			}
-		}
-
-		if filter.Owner != "" {
-			if asset.User != filter.Owner {
-				continue
-			}
-		}
-
-		if filter.Status != "" {
-			if asset.Status != string(filter.Status) {
-				continue
-			}
-		}
-
-		result = append(result, asset)
+	if cfg.BuyOrders {
+		req = req.BuyOrders(cfg.BuyOrders)
 	}
 
-	return result
+	if cfg.Direction != "" {
+		req = req.Direction(cfg.Direction)
+	}
+
+	if cfg.IncludeFees {
+		req = req.IncludeFees(cfg.IncludeFees)
+	}
+
+	if cfg.Metadata != nil {
+		if data := am.parseMetadata(cfg.Metadata); data != "" {
+			req = req.Metadata(data)
+		}
+	}
+
+	if cfg.Name != "" {
+		req = req.IncludeFees(cfg.IncludeFees)
+	}
+
+	if cfg.OrderBy != "" {
+		req.OrderBy(cfg.OrderBy)
+	} else {
+		req.OrderBy("updated_at")
+	}
+
+	if cfg.SellOrders {
+		req = req.SellOrders(cfg.SellOrders)
+	}
+
+	if cfg.Status != "" {
+		req = req.Status(cfg.Status)
+	}
+
+	if cfg.UpdatedMaxTimestamp != "" {
+		req = req.UpdatedMaxTimestamp(cfg.UpdatedMaxTimestamp)
+	}
+
+	if cfg.UpdatedMinTimestamp != "" {
+		req = req.UpdatedMinTimestamp(cfg.UpdatedMinTimestamp)
+	}
+
+	if cfg.User != "" {
+		req = req.User(cfg.User)
+	}
+
+	// Recursion helpers
+	if cfg.Before != "" {
+		req = req.UpdatedMaxTimestamp(cfg.Before)
+	}
+
+	if cfg.Cursor != "" {
+		req = req.Cursor(cfg.Cursor)
+	}
+
+	return req
 }
 
 func (am *AssetManager) PrintAsset(asset *api.Asset) {
@@ -204,4 +199,24 @@ func (am *AssetManager) PrintAssetCounts(name string, assets []api.AssetWithOrde
 	}
 
 	fmt.Println(FormatAssetCounts(name, counts))
+}
+
+func (am *AssetManager) parseMetadata(metadata []string) string {
+	metamap := make(map[string][]string, len(metadata))
+	for _, item := range metadata {
+		parts := strings.SplitN(item, "=", 2)
+		if len(parts) != 2 {
+			log.Printf("could not parse metadata item %s into a key=value pair", item)
+			continue
+		}
+
+		metamap[parts[0]] = append(metamap[parts[0]], parts[1])
+	}
+
+	data, err := json.Marshal(metamap)
+	if err != nil {
+		log.Printf("skipping metamata completely because it could not be converted to json: %v", err)
+	}
+
+	return string(data)
 }
