@@ -9,20 +9,6 @@ import (
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 )
 
-var Collections = map[string]struct {
-	Name string
-	Addr string
-}{
-	"portal": {
-		Name: "BitVerse Portals",
-		Addr: "0xe4ac52f4b4a721d1d0ad8c9c689df401c2db7291",
-	},
-	"hero": {
-		Name: "BitVerse Heroes",
-		Addr: "0x6465ef3009f3c474774f4afb607a5d600ea71d95",
-	},
-}
-
 type AssetStatus string
 
 const (

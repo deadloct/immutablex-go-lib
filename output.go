@@ -8,9 +8,9 @@ import (
 
 const ImmutascanURL = "https://immutascan.io/address/"
 
-func FormatAssetCounts(name string, counts map[string]int) string {
+func FormatAssetCounts(addr string, counts map[string]int) string {
 	var str = `
-%s:
+Asset counts for collection %s:
 - Common: %d
 - Rare: %d
 - Epic: %d
@@ -20,7 +20,7 @@ func FormatAssetCounts(name string, counts map[string]int) string {
 `
 	return fmt.Sprintf(
 		str,
-		name,
+		addr,
 		counts["Common"],
 		counts["Rare"],
 		counts["Epic"],
