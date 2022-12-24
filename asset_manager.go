@@ -154,7 +154,13 @@ func (am *AssetManager) GetAPIListAssetsRequest(ctx context.Context, cfg *GetAss
 }
 
 func (am *AssetManager) PrintAsset(asset *api.Asset) {
-	fmt.Println(FormatAssetInfo(asset))
+	data, err := json.MarshalIndent(asset, "", "  ")
+	if err != nil {
+		log.Printf("could not convert asset to json: %v\nasset: %#v\n", err, asset)
+		return
+	}
+
+	fmt.Println(string(data))
 }
 
 func (am *AssetManager) PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
@@ -175,28 +181,8 @@ func (am *AssetManager) PrintAssets(collectionAddr string, assets []api.AssetWit
 			id = "[no id set]"
 		}
 
-		fmt.Printf("%s: %v (%s)\n", name, status, path.Join(ImmutascanURL, collectionAddr, asset.TokenId))
+		fmt.Printf("%s (Status: %v): (%s)\n", name, status, path.Join(ImmutascanURL, collectionAddr, asset.TokenId))
 	}
-}
-
-func (am *AssetManager) PrintAssetCounts(name string, assets []api.AssetWithOrders) {
-	counts := make(map[string]int, 4)
-	for _, asset := range assets {
-		rarity, ok := asset.Metadata["Rarity"].(string)
-		if !ok {
-			log.Printf("asset %s skipped because it doesn't have a rarity\n", asset.TokenId)
-			continue
-		}
-
-		if !asset.Name.IsSet() {
-			log.Printf("asset %s skipped since it has no name and must be messed up\n", asset.TokenId)
-		}
-
-		counts[rarity]++
-		counts["Total"]++
-	}
-
-	fmt.Println(FormatAssetCounts(name, counts))
 }
 
 func (am *AssetManager) parseMetadata(metadata []string) string {
