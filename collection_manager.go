@@ -7,6 +7,21 @@ import (
 	"os"
 )
 
+var DefaultShortcutsContent = []byte(`
+[
+    {
+        "name": "BitVerse Portals",
+        "addr": "0xe4ac52f4b4a721d1d0ad8c9c689df401c2db7291",
+        "shortcut": "portal"
+    },
+    {
+        "name": "BitVerse Heroes",
+        "addr": "0x6465ef3009f3c474774f4afb607a5d600ea71d95",
+        "shortcut": "hero"
+    }
+]
+`)
+
 var ShortcutLocation string
 
 func init() {
@@ -48,21 +63,21 @@ func (c *CollectionManager) GetShortcutByName(name string) *CollectionShortcut {
 }
 
 func (c *CollectionManager) loadShortcuts() {
-	if ShortcutLocation == "" {
-		return
-	}
-
-	if _, err := os.Stat(ShortcutLocation); err != nil {
-		log.Printf("skipping shortcuts load because shortcut location %s does not exist", ShortcutLocation)
-	}
-
-	content, err := ioutil.ReadFile(ShortcutLocation)
-	if err != nil {
-		log.Printf("could not load shortcuts file %s: %v", ShortcutLocation, err)
+	content := DefaultShortcutsContent
+	if ShortcutLocation != "" {
+		if _, err := os.Stat(ShortcutLocation); err == nil {
+			content, err = ioutil.ReadFile(ShortcutLocation)
+			if err != nil {
+				log.Printf("could not load shortcuts file %s: %v", ShortcutLocation, err)
+				content = DefaultShortcutsContent
+			}
+		} else {
+			log.Printf("could not stat shortcuts file %s: %v", ShortcutLocation, err)
+		}
 	}
 
 	var data []CollectionShortcut
-	if err = json.Unmarshal(content, &data); err != nil {
+	if err := json.Unmarshal(content, &data); err != nil {
 		log.Printf("could not parse shortcuts file %s: %v", ShortcutLocation, err)
 	}
 
