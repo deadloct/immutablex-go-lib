@@ -29,12 +29,10 @@ func (am *AssetManager) Stop() {
 	am.client.Stop()
 }
 
-func (am *AssetManager) GetAsset(ctx context.Context, collectionAddr, id string) (*api.Asset, error) {
-	includeFees := false
-	return am.client.GetClient().GetAsset(ctx, collectionAddr, id, &includeFees)
+func (am *AssetManager) GetAsset(ctx context.Context, tokenAddress, tokenID string, includeFees bool) (*api.Asset, error) {
+	return am.client.GetClient().GetAsset(ctx, tokenAddress, tokenID, &includeFees)
 }
 
-// Options from https://docs.x.immutable.com/reference/#/operations/listAssets
 type GetAssetsRequest struct {
 	BuyOrders           bool
 	Collection          string
