@@ -34,7 +34,7 @@ func (am *AssetManager) GetAsset(ctx context.Context, tokenAddress, tokenID stri
 	return am.client.GetClient().GetAsset(ctx, tokenAddress, tokenID, &includeFees)
 }
 
-type GetAssetsRequest struct {
+type ListAssetsConfig struct {
 	BuyOrders           bool
 	Collection          string
 	Direction           string
@@ -54,9 +54,9 @@ type GetAssetsRequest struct {
 	Before string
 }
 
-func (am *AssetManager) GetAssets(
+func (am *AssetManager) ListAssets(
 	ctx context.Context,
-	cfg *GetAssetsRequest,
+	cfg *ListAssetsConfig,
 ) ([]api.AssetWithOrders, error) {
 
 	req := am.getAPIListAssetsRequest(ctx, cfg)
@@ -77,13 +77,13 @@ func (am *AssetManager) GetAssets(
 	log.Debugf("fetched %v assets from %v to %v", len(resp.Result), first, last)
 
 	if resp.Remaining > 0 {
-		return am.GetAssets(ctx, cfg)
+		return am.ListAssets(ctx, cfg)
 	}
 
 	// Attempt to fetch earlier assets
 	if len(resp.Result) > 0 {
 		cfg.Before = last
-		return am.GetAssets(ctx, cfg)
+		return am.ListAssets(ctx, cfg)
 	}
 
 	return cfg.Assets, nil
@@ -121,7 +121,7 @@ func (am *AssetManager) PrintAssets(collectionAddr string, assets []api.AssetWit
 	}
 }
 
-func (am *AssetManager) getAPIListAssetsRequest(ctx context.Context, cfg *GetAssetsRequest) api.ApiListAssetsRequest {
+func (am *AssetManager) getAPIListAssetsRequest(ctx context.Context, cfg *ListAssetsConfig) api.ApiListAssetsRequest {
 	req := am.client.GetClient().NewListAssetsRequest(ctx).
 		Collection(cfg.Collection).
 		PageSize(MaxAssetsPerReq)
