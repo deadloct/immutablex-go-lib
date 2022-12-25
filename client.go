@@ -1,12 +1,12 @@
 package lib
 
 import (
-	"log"
 	"os"
 	"sync"
 
 	"github.com/immutable/imx-core-sdk-golang/imx"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
+	log "github.com/sirupsen/logrus"
 )
 
 const MaxAssetsPerReq = 200

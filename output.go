@@ -3,9 +3,9 @@ package lib
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
+	log "github.com/sirupsen/logrus"
 )
 
 const ImmutascanURL = "https://immutascan.io/address/"
@@ -15,7 +15,7 @@ func FormatAssetInfo(asset *api.Asset) string {
 
 	data, err := json.MarshalIndent(asset, "", "  ")
 	if err != nil {
-		log.Printf("could not stringify asset: %v", err)
+		log.Debugf("could not stringify asset: %v", err)
 		return fmt.Sprintf("%#v\n", asset)
 	}
 

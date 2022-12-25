@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"path"
 	"strings"
 
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
+	log "github.com/sirupsen/logrus"
 )
 
 type AssetManager struct {
@@ -30,6 +30,7 @@ func (am *AssetManager) Stop() {
 }
 
 func (am *AssetManager) GetAsset(ctx context.Context, tokenAddress, tokenID string, includeFees bool) (*api.Asset, error) {
+	log.Debugf("fetching asset id %s from collection %s (with fees:%b)", tokenAddress, tokenID, includeFees)
 	return am.client.GetClient().GetAsset(ctx, tokenAddress, tokenID, &includeFees)
 }
 
@@ -73,7 +74,7 @@ func (am *AssetManager) GetAssets(
 
 	first := *resp.Result[0].UpdatedAt.Get()
 	last := *resp.Result[len(resp.Result)-1].UpdatedAt.Get()
-	log.Printf("fetched %v assets from %v to %v\n", len(resp.Result), first, last)
+	log.Debugf("fetched %v assets from %v to %v", len(resp.Result), first, last)
 
 	if resp.Remaining > 0 {
 		return am.GetAssets(ctx, cfg)
@@ -156,7 +157,7 @@ func (am *AssetManager) GetAPIListAssetsRequest(ctx context.Context, cfg *GetAss
 func (am *AssetManager) PrintAsset(asset *api.Asset) {
 	data, err := json.MarshalIndent(asset, "", "  ")
 	if err != nil {
-		log.Printf("could not convert asset to json: %v\nasset: %#v\n", err, asset)
+		log.Debugf("could not convert asset to json: %v\nasset: %#v\n", err, asset)
 		return
 	}
 
@@ -190,7 +191,7 @@ func (am *AssetManager) parseMetadata(metadata []string) string {
 	for _, item := range metadata {
 		parts := strings.SplitN(item, "=", 2)
 		if len(parts) != 2 {
-			log.Printf("could not parse metadata item %s into a key=value pair", item)
+			log.Debugf("could not parse metadata item %s into a key=value pair", item)
 			continue
 		}
 
@@ -199,7 +200,7 @@ func (am *AssetManager) parseMetadata(metadata []string) string {
 
 	data, err := json.Marshal(metamap)
 	if err != nil {
-		log.Printf("skipping metamata completely because it could not be converted to json: %v", err)
+		log.Debugf("skipping metamata completely because it could not be converted to json: %v", err)
 	}
 
 	return string(data)

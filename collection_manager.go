@@ -3,8 +3,9 @@ package lib
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var DefaultShortcutsContent = []byte(`
@@ -68,17 +69,17 @@ func (c *CollectionManager) loadShortcuts() {
 		if _, err := os.Stat(ShortcutLocation); err == nil {
 			content, err = ioutil.ReadFile(ShortcutLocation)
 			if err != nil {
-				log.Printf("could not load shortcuts file %s: %v", ShortcutLocation, err)
+				log.Debugf("could not load shortcuts file %s: %v", ShortcutLocation, err)
 				content = DefaultShortcutsContent
 			}
 		} else {
-			log.Printf("could not stat shortcuts file %s: %v", ShortcutLocation, err)
+			log.Debugf("could not stat shortcuts file %s: %v", ShortcutLocation, err)
 		}
 	}
 
 	var data []CollectionShortcut
 	if err := json.Unmarshal(content, &data); err != nil {
-		log.Printf("could not parse shortcuts file %s: %v", ShortcutLocation, err)
+		log.Debugf("could not parse shortcuts file %s: %v", ShortcutLocation, err)
 	}
 
 	c.shortcuts = make(map[string]CollectionShortcut, len(data))
