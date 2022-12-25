@@ -1,10 +1,13 @@
 package lib
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 
+	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -54,6 +57,40 @@ func (c *CollectionManager) Stop() {
 	c.client.Stop()
 }
 
+type ListCollectionsConfig struct {
+	Blacklist string
+	Direction string
+	Keyword   string
+	OrderBy   string
+	Whitelist string
+
+	// Used internally for recursion
+	Collections []api.Collection
+	Cursor      string
+}
+
+func (c *CollectionManager) ListCollections(ctx context.Context, cfg *ListCollectionsConfig) ([]api.Collection, error) {
+	req := c.getAPIListCollectionsRequest(ctx, cfg)
+
+	resp, err := c.client.GetClient().ListCollections(req)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.Collections = append(cfg.Collections, resp.Result...)
+	cfg.Cursor = resp.Cursor
+
+	first := *resp.Result[0].UpdatedAt.Get()
+	last := *resp.Result[len(resp.Result)-1].UpdatedAt.Get()
+	log.Debugf("fetched %v assets from %v to %v", len(resp.Result), first, last)
+
+	if resp.Remaining > 0 {
+		return c.ListCollections(ctx, cfg)
+	}
+
+	return cfg.Collections, nil
+}
+
 func (c *CollectionManager) GetShortcutByName(name string) *CollectionShortcut {
 	v, ok := c.shortcuts[name]
 	if !ok {
@@ -61,6 +98,38 @@ func (c *CollectionManager) GetShortcutByName(name string) *CollectionShortcut {
 	}
 
 	return &v
+}
+
+func (c *CollectionManager) PrintCollections(collections []api.Collection) {
+	for _, col := range collections {
+		fmt.Printf("%s: %s\n", col.Name, ImmutascanURL+col.Address)
+	}
+}
+
+func (c *CollectionManager) getAPIListCollectionsRequest(ctx context.Context, cfg *ListCollectionsConfig) *api.ApiListCollectionsRequest {
+	req := c.client.GetClient().NewListCollectionsRequest(ctx).PageSize(MaxAssetsPerReq)
+
+	if cfg.Blacklist != "" {
+		req = req.Blacklist(cfg.Blacklist)
+	}
+
+	if cfg.Direction != "" {
+		req = req.Direction(cfg.Direction)
+	}
+
+	if cfg.Keyword != "" {
+		req = req.Keyword(cfg.Keyword)
+	}
+
+	if cfg.OrderBy != "" {
+		req = req.OrderBy(cfg.OrderBy)
+	}
+
+	if cfg.Whitelist != "" {
+		req = req.Whitelist(cfg.Whitelist)
+	}
+
+	return &req
 }
 
 func (c *CollectionManager) loadShortcuts() {

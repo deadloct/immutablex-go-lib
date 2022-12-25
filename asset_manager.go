@@ -59,7 +59,7 @@ func (am *AssetManager) GetAssets(
 	cfg *GetAssetsRequest,
 ) ([]api.AssetWithOrders, error) {
 
-	req := am.GetAPIListAssetsRequest(ctx, cfg)
+	req := am.getAPIListAssetsRequest(ctx, cfg)
 	resp, err := am.client.GetClient().ListAssets(&req)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,39 @@ func (am *AssetManager) GetAssets(
 	return cfg.Assets, nil
 }
 
-func (am *AssetManager) GetAPIListAssetsRequest(ctx context.Context, cfg *GetAssetsRequest) api.ApiListAssetsRequest {
+func (am *AssetManager) PrintAsset(asset *api.Asset) {
+	data, err := json.MarshalIndent(asset, "", "  ")
+	if err != nil {
+		log.Debugf("could not convert asset to json: %v\nasset: %#v\n", err, asset)
+		return
+	}
+
+	fmt.Println(string(data))
+}
+
+func (am *AssetManager) PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
+	for _, asset := range assets {
+		name := "[no name set]"
+		status := asset.Status
+		id := *asset.Id
+
+		if asset.Name.IsSet() && asset.Name.Get() != nil {
+			name = *asset.Name.Get()
+		}
+
+		if status == "" {
+			status = "[no status set]"
+		}
+
+		if id == "" {
+			id = "[no id set]"
+		}
+
+		fmt.Printf("%s (Status: %v): (%s)\n", name, status, path.Join(ImmutascanURL, collectionAddr, asset.TokenId))
+	}
+}
+
+func (am *AssetManager) getAPIListAssetsRequest(ctx context.Context, cfg *GetAssetsRequest) api.ApiListAssetsRequest {
 	req := am.client.GetClient().NewListAssetsRequest(ctx).
 		Collection(cfg.Collection).
 		PageSize(MaxAssetsPerReq)
@@ -152,38 +184,6 @@ func (am *AssetManager) GetAPIListAssetsRequest(ctx context.Context, cfg *GetAss
 	}
 
 	return req
-}
-
-func (am *AssetManager) PrintAsset(asset *api.Asset) {
-	data, err := json.MarshalIndent(asset, "", "  ")
-	if err != nil {
-		log.Debugf("could not convert asset to json: %v\nasset: %#v\n", err, asset)
-		return
-	}
-
-	fmt.Println(string(data))
-}
-
-func (am *AssetManager) PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
-	for _, asset := range assets {
-		name := "[no name set]"
-		status := asset.Status
-		id := *asset.Id
-
-		if asset.Name.IsSet() && asset.Name.Get() != nil {
-			name = *asset.Name.Get()
-		}
-
-		if status == "" {
-			status = "[no status set]"
-		}
-
-		if id == "" {
-			id = "[no id set]"
-		}
-
-		fmt.Printf("%s (Status: %v): (%s)\n", name, status, path.Join(ImmutascanURL, collectionAddr, asset.TokenId))
-	}
 }
 
 func (am *AssetManager) parseMetadata(metadata []string) string {
