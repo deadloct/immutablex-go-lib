@@ -57,6 +57,11 @@ func (c *CollectionManager) Stop() {
 	c.client.Stop()
 }
 
+func (c *CollectionManager) GetCollection(ctx context.Context, collection string) (*api.Collection, error) {
+	log.Debugf("fetching collection %s", collection)
+	return c.client.GetClient().GetCollection(ctx, collection)
+}
+
 type ListCollectionsConfig struct {
 	Blacklist string
 	Direction string
@@ -100,9 +105,23 @@ func (c *CollectionManager) GetShortcutByName(name string) *CollectionShortcut {
 	return &v
 }
 
-func (c *CollectionManager) PrintCollections(collections []api.Collection) {
+func (c *CollectionManager) PrintCollection(collection *api.Collection) {
+	data, err := json.MarshalIndent(collection, "", "  ")
+	if err != nil {
+		log.Debugf("could not convert asset to json: %v\nasset: %#v\n", err, collection)
+		return
+	}
+
+	fmt.Println(string(data))
+}
+
+func (c *CollectionManager) PrintCollections(collections []api.Collection, detailed bool) {
 	for _, col := range collections {
-		fmt.Printf("%s: %s\n", col.Name, ImmutascanURL+col.Address)
+		if detailed {
+			c.PrintCollection(&col)
+		} else {
+			fmt.Printf("%s: %s\n", col.Name, ImmutascanURL+col.Address)
+		}
 	}
 }
 
