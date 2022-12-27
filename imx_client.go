@@ -1,26 +1,13 @@
 package lib
 
 import (
-	"os"
 	"sync"
 
 	"github.com/immutable/imx-core-sdk-golang/imx"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
-	log "github.com/sirupsen/logrus"
 )
 
-const MaxAssetsPerReq = 200
-
-var AlchemyKey string
-
-func init() {
-	AlchemyKey = os.Getenv("ALCHEMY_API_KEY")
-	if AlchemyKey == "" {
-		log.Panic("no alchemy api key provided, get one at alchemy.com")
-	}
-}
-
-type IMXClientWrapper interface {
+type ClientWrapper interface {
 	Start() error
 	Stop()
 	GetClient() *imx.Client
@@ -33,8 +20,8 @@ type Client struct {
 	sync.Mutex
 }
 
-func NewClient() *Client {
-	return &Client{key: AlchemyKey}
+func NewClient(alchemyKey string) *Client {
+	return &Client{key: alchemyKey}
 }
 
 func (c *Client) Start() error {
