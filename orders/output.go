@@ -3,12 +3,24 @@ package orders
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/deadloct/immutablex-cli/lib"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
+
+func getPrice(order api.Order) float64 {
+	amount, err := strconv.Atoi(order.GetBuy().Data.QuantityWithFees)
+	if err != nil {
+		return 0
+	}
+
+	decimals := int(*order.GetBuy().Data.Decimals)
+	return float64(amount) * math.Pow10(-1*decimals)
+}
 
 func PrintOrderDetail(order api.Order) {
 	data, err := json.MarshalIndent(order, "", "  ")
@@ -22,11 +34,14 @@ func PrintOrderDetail(order api.Order) {
 
 func PrintOrderSummary(order api.Order) {
 	url := strings.Join([]string{lib.ImmutascanURL, "order", fmt.Sprint(order.OrderId)}, "/")
+	ethPrice := getPrice(order)
+	fiatPrice := ethPrice * lib.GetCoinbaseClientInstance().LastSpotPrice
 	fmt.Printf(`Order:
 - Status: %s
+- Price With Fees: %f ETH / %.2f USD
 - User: %s
 - Date: %s
-- Immutascan: %s%s`, order.Status, order.User, order.GetUpdatedTimestamp(), url, "\n\n")
+- Immutascan: %s%s`, order.Status, ethPrice, fiatPrice, order.User, order.GetUpdatedTimestamp(), url, "\n\n")
 }
 
 func PrintOrders(orders []api.Order, verbose bool) {

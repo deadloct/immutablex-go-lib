@@ -2,6 +2,7 @@ package orders
 
 import (
 	"context"
+	"math"
 
 	"github.com/deadloct/immutablex-cli/lib"
 	"github.com/deadloct/immutablex-cli/lib/collections"
@@ -49,13 +50,15 @@ func (c *AlchemyClient) ListOrders(ctx context.Context, cfg *ListOrdersConfig) (
 	}
 
 	cfg.Orders = append(cfg.Orders, resp.Result...)
+	cfg.Orders = cfg.Orders[:int(math.Min(float64(len(cfg.Orders)), float64(cfg.PageSize)))]
 	cfg.Cursor = resp.Cursor
 
 	first := *resp.Result[0].UpdatedTimestamp.Get()
 	last := *resp.Result[len(resp.Result)-1].UpdatedTimestamp.Get()
 	log.Debugf("fetched %v collections from %v to %v", len(resp.Result), first, last)
 
-	if resp.Remaining > 0 {
+	getMore := len(cfg.Orders) < cfg.PageSize || cfg.PageSize == 0
+	if resp.Remaining > 0 && getMore {
 		return c.ListOrders(ctx, cfg)
 	}
 
@@ -123,6 +126,10 @@ func (c *AlchemyClient) getAPIListOrdersRequest(ctx context.Context, cfg *ListOr
 
 	if cfg.OrderBy != "" {
 		req = req.OrderBy(cfg.OrderBy)
+	}
+
+	if cfg.PageSize > 0 {
+		req = req.PageSize(int32(cfg.PageSize))
 	}
 
 	if cfg.SellAssetID != "" {

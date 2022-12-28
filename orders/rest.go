@@ -3,6 +3,8 @@ package orders
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 
@@ -52,13 +54,15 @@ func (c *RESTClient) ListOrders(ctx context.Context, cfg *ListOrdersConfig) ([]a
 	}
 
 	cfg.Orders = append(cfg.Orders, parsed.Result...)
+	cfg.Orders = cfg.Orders[:int(math.Min(float64(len(cfg.Orders)), float64(cfg.PageSize)))]
 	cfg.Cursor = parsed.Cursor
 
 	first := *parsed.Result[0].UpdatedTimestamp.Get()
 	last := *parsed.Result[len(parsed.Result)-1].UpdatedTimestamp.Get()
 	log.Debugf("fetched %v orders from %v to %v", len(parsed.Result), first, last)
 
-	if parsed.Remaining > 0 {
+	getMore := len(cfg.Orders) < cfg.PageSize || cfg.PageSize == 0
+	if parsed.Remaining > 0 && getMore {
 		return c.ListOrders(ctx, cfg)
 	}
 
@@ -126,6 +130,10 @@ func (c *RESTClient) getListOrdersURL(cfg *ListOrdersConfig) string {
 
 	if cfg.OrderBy != "" {
 		v.Set("order_by", cfg.OrderBy)
+	}
+
+	if cfg.PageSize > 0 {
+		v.Set("page_size", fmt.Sprint(cfg.PageSize))
 	}
 
 	if cfg.SellAssetID != "" {
