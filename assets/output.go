@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func PrintAsset(asset *api.Asset) {
+func PrintAssetJSON[T any](asset T) {
 	data, err := json.MarshalIndent(asset, "", "  ")
 	if err != nil {
 		log.Debugf("could not convert asset to json: %v\nasset: %#v\n", err, asset)
@@ -20,30 +20,64 @@ func PrintAsset(asset *api.Asset) {
 	fmt.Println(string(data))
 }
 
-func PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
+func printAssetCommon(name, status, id, tokenID, collectionAddr string) {
+	if name == "" {
+		name = "[no name set]"
+	}
+
+	if status == "" {
+		status = "[no status set]"
+	}
+
+	if id == "" {
+		id = "[no id set]"
+	}
+
+	url := strings.Join([]string{
+		lib.ImmutascanURL,
+		"address",
+		collectionAddr,
+		tokenID,
+	}, "/")
+	fmt.Printf("%s (Status: %v): (%s)\n", name, status, url)
+}
+
+func PrintAssetWithOrdersStandard(collectionAddr string, asset *api.AssetWithOrders) {
+	printAssetCommon(
+		asset.GetName(),
+		asset.Status,
+		*asset.Id,
+		asset.TokenId,
+		collectionAddr,
+	)
+}
+
+func PrintAssetStandard(collectionAddr string, asset *api.Asset) {
+	printAssetCommon(
+		asset.GetName(),
+		asset.Status,
+		*asset.Id,
+		asset.TokenId,
+		collectionAddr,
+	)
+}
+
+func PrintAsset(collectionAddr string, asset *api.Asset, output string) {
+	switch strings.ToLower(output) {
+	case "json":
+		PrintAssetJSON(asset)
+	default:
+		PrintAssetStandard(collectionAddr, asset)
+	}
+}
+
+func PrintAssets(collectionAddr string, assets []api.AssetWithOrders, output string) {
 	for _, asset := range assets {
-		name := asset.GetName()
-		status := asset.Status
-		id := *asset.Id
-
-		if name == "" {
-			name = "[no name set]"
+		switch strings.ToLower(output) {
+		case "json":
+			PrintAssetJSON(asset)
+		default:
+			PrintAssetWithOrdersStandard(collectionAddr, &asset)
 		}
-
-		if status == "" {
-			status = "[no status set]"
-		}
-
-		if id == "" {
-			id = "[no id set]"
-		}
-
-		url := strings.Join([]string{
-			lib.ImmutascanURL,
-			"address",
-			collectionAddr,
-			asset.TokenId,
-		}, ",")
-		fmt.Printf("%s (Status: %v): (%s)\n", name, status, url)
 	}
 }

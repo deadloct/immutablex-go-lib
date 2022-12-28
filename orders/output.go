@@ -22,7 +22,7 @@ func getPrice(order api.Order) float64 {
 	return float64(amount) * math.Pow10(-1*decimals)
 }
 
-func PrintOrderDetail(order api.Order) {
+func PrintOrderJSON(order api.Order) {
 	data, err := json.MarshalIndent(order, "", "  ")
 	if err != nil {
 		log.Debugf("could not convert asset to json: %v\nasset: %#v\n", err, order)
@@ -32,7 +32,7 @@ func PrintOrderDetail(order api.Order) {
 	fmt.Println(string(data))
 }
 
-func PrintOrderSummary(order api.Order) {
+func PrintOrderNormal(order api.Order) {
 	url := strings.Join([]string{lib.ImmutascanURL, "order", fmt.Sprint(order.OrderId)}, "/")
 	ethPrice := getPrice(order)
 	fiatPrice := ethPrice * lib.GetCoinbaseClientInstance().LastSpotPrice
@@ -44,12 +44,13 @@ func PrintOrderSummary(order api.Order) {
 - Immutascan: %s%s`, order.Status, ethPrice, fiatPrice, order.User, order.GetUpdatedTimestamp(), url, "\n\n")
 }
 
-func PrintOrders(orders []api.Order, verbose bool) {
+func PrintOrders(orders []api.Order, output string) {
 	for _, o := range orders {
-		if verbose {
-			PrintOrderDetail(o)
-		} else {
-			PrintOrderSummary(o)
+		switch strings.ToLower(output) {
+		case "json":
+			PrintOrderJSON(o)
+		default:
+			PrintOrderNormal(o)
 		}
 	}
 }
