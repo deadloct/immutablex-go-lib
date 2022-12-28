@@ -3,6 +3,7 @@ package collections
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/deadloct/immutablex-cli/lib"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
@@ -24,7 +25,7 @@ func PrintCollections(collections []api.Collection, detailed bool) {
 		if detailed {
 			PrintCollection(&col)
 		} else {
-			fmt.Printf("%s: %s\n", col.Name, lib.ImmutascanURL+col.Address)
+			fmt.Printf("%s: %s\n", col.Name, strings.Join([]string{lib.ImmutascanURL, "address", col.Address}, "/"))
 		}
 	}
 }

@@ -9,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const MaxAssetsPerReq = 200
-
 type AlchemyClientConfig struct {
 	alchemyKey string
 }
@@ -70,12 +68,6 @@ func (am *AlchemyClient) ListAssets(
 		return am.ListAssets(ctx, cfg)
 	}
 
-	// Attempt to fetch earlier assets
-	if len(resp.Result) > 0 {
-		cfg.Before = last
-		return am.ListAssets(ctx, cfg)
-	}
-
 	return cfg.Assets, nil
 }
 
@@ -85,13 +77,7 @@ func (am *AlchemyClient) getAPIListAssetsRequest(ctx context.Context, cfg ListAs
 		collectionAddr = s.Addr
 	}
 
-	req := am.client.GetClient().NewListAssetsRequest(ctx).
-		Collection(collectionAddr).
-		PageSize(MaxAssetsPerReq)
-
-	if cfg.Before != "" {
-		req = req.UpdatedMaxTimestamp(cfg.Before)
-	}
+	req := am.client.GetClient().NewListAssetsRequest(ctx).Collection(collectionAddr)
 
 	if cfg.BuyOrders {
 		req = req.BuyOrders(cfg.BuyOrders)
@@ -109,10 +95,8 @@ func (am *AlchemyClient) getAPIListAssetsRequest(ctx context.Context, cfg ListAs
 		req = req.IncludeFees(cfg.IncludeFees)
 	}
 
-	if cfg.Metadata != nil {
-		if data := ParseMetadata(cfg.Metadata); data != "" {
-			req = req.Metadata(data)
-		}
+	if cfg.Metadata != "" {
+		req = req.Metadata(cfg.Metadata)
 	}
 
 	if cfg.Name != "" {

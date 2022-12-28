@@ -3,7 +3,7 @@ package assets
 import (
 	"encoding/json"
 	"fmt"
-	"path"
+	"strings"
 
 	"github.com/deadloct/immutablex-cli/lib"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
@@ -22,12 +22,12 @@ func PrintAsset(asset *api.Asset) {
 
 func PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
 	for _, asset := range assets {
-		name := "[no name set]"
+		name := asset.GetName()
 		status := asset.Status
 		id := *asset.Id
 
-		if asset.Name.IsSet() && asset.Name.Get() != nil {
-			name = *asset.Name.Get()
+		if name == "" {
+			name = "[no name set]"
 		}
 
 		if status == "" {
@@ -38,6 +38,12 @@ func PrintAssets(collectionAddr string, assets []api.AssetWithOrders) {
 			id = "[no id set]"
 		}
 
-		fmt.Printf("%s (Status: %v): (%s)\n", name, status, path.Join(lib.ImmutascanURL, collectionAddr, asset.TokenId))
+		url := strings.Join([]string{
+			lib.ImmutascanURL,
+			"address",
+			collectionAddr,
+			asset.TokenId,
+		}, ",")
+		fmt.Printf("%s (Status: %v): (%s)\n", name, status, url)
 	}
 }

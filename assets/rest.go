@@ -92,12 +92,6 @@ func (c *RESTClient) ListAssets(ctx context.Context, cfg ListAssetsConfig) ([]ap
 		return c.ListAssets(ctx, cfg)
 	}
 
-	// Attempt to fetch earlier assets
-	if len(resp.Result) > 0 {
-		cfg.Before = last
-		return c.ListAssets(ctx, cfg)
-	}
-
 	return cfg.Assets, nil
 }
 
@@ -106,10 +100,6 @@ func (c *RESTClient) getListAssetsURL(cfg ListAssetsConfig) string {
 
 	if cfg.BuyOrders {
 		v.Set("buy_orders", "true")
-	}
-
-	if cfg.Before != "" {
-		v.Set("before", cfg.Before)
 	}
 
 	collectionAddr := cfg.Collection
@@ -133,8 +123,8 @@ func (c *RESTClient) getListAssetsURL(cfg ListAssetsConfig) string {
 		v.Set("include_fees", "true")
 	}
 
-	if len(cfg.Metadata) > 0 {
-		v.Set("metadata", ParseMetadata(cfg.Metadata))
+	if cfg.Metadata != "" {
+		v.Set("metadata", cfg.Metadata)
 	}
 
 	if cfg.Name != "" {

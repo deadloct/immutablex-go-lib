@@ -8,8 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const MaxCollectionsPerReq = 200
-
 type AlchemyClientConfig struct {
 	alchemyKey string
 }
@@ -70,7 +68,7 @@ func (c *AlchemyClient) ListCollections(ctx context.Context, cfg *ListCollection
 }
 
 func (c *AlchemyClient) getAPIListCollectionsRequest(ctx context.Context, cfg *ListCollectionsConfig) *api.ApiListCollectionsRequest {
-	req := c.client.GetClient().NewListCollectionsRequest(ctx).PageSize(MaxCollectionsPerReq)
+	req := c.client.GetClient().NewListCollectionsRequest(ctx)
 
 	if cfg.Blacklist != "" {
 		req = req.Blacklist(cfg.Blacklist)
