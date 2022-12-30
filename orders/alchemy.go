@@ -93,7 +93,13 @@ func (c *AlchemyClient) getAPIListOrdersRequest(ctx context.Context, cfg *ListOr
 	}
 
 	if cfg.BuyTokenAddress != "" {
-		req = req.BuyTokenAddress(cfg.BuyTokenAddress)
+		buyAddr := cfg.BuyTokenAddress
+		if v := c.shortcuts.GetShortcutByName(buyAddr); v != nil {
+			buyAddr = v.Addr
+		}
+
+		log.Debugf("using buy token address %s (provided value: %s)", buyAddr, cfg.BuyTokenAddress)
+		req = req.BuyTokenAddress(buyAddr)
 	}
 
 	if cfg.BuyTokenID != "" {
@@ -149,7 +155,13 @@ func (c *AlchemyClient) getAPIListOrdersRequest(ctx context.Context, cfg *ListOr
 	}
 
 	if cfg.SellTokenAddress != "" {
-		req = req.SellTokenAddress(cfg.SellTokenAddress)
+		sellAddr := cfg.SellTokenAddress
+		if v := c.shortcuts.GetShortcutByName(sellAddr); v != nil {
+			sellAddr = v.Addr
+		}
+
+		log.Debugf("using sell token address %s (provided value: %s)", sellAddr, cfg.SellTokenAddress)
+		req = req.SellTokenAddress(sellAddr)
 	}
 
 	if cfg.SellTokenID != "" {
