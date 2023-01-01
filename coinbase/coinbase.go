@@ -1,4 +1,4 @@
-package lib
+package coinbase
 
 import (
 	"encoding/json"

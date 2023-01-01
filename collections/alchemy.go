@@ -3,7 +3,7 @@ package collections
 import (
 	"context"
 
-	"github.com/deadloct/immutablex-cli/lib"
+	"github.com/deadloct/immutablex-go-lib/imx"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,13 +13,13 @@ type AlchemyClientConfig struct {
 }
 
 type AlchemyClient struct {
-	client    lib.ClientWrapper
+	client    imx.ClientWrapper
 	shortcuts Shortcuts
 }
 
 func NewAlchemyClient(cfg AlchemyClientConfig) *AlchemyClient {
 	return &AlchemyClient{
-		client:    lib.NewClient(cfg.alchemyKey),
+		client:    imx.NewClient(cfg.alchemyKey),
 		shortcuts: NewShortcuts(),
 	}
 }

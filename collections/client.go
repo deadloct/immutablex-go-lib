@@ -3,7 +3,7 @@ package collections
 import (
 	"context"
 
-	"github.com/deadloct/immutablex-cli/lib"
+	"github.com/deadloct/immutablex-go-lib/utils"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,7 +29,7 @@ type Client interface {
 
 func NewClientConfig(alchemyKey string) interface{} {
 	if alchemyKey == "" {
-		return RESTClientConfig{url: lib.DefaultImmutableAPIURL}
+		return RESTClientConfig{url: utils.DefaultImmutableAPIURL}
 	}
 
 	return AlchemyClientConfig{alchemyKey: alchemyKey}

@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/deadloct/immutablex-cli/lib/collections"
+	"github.com/deadloct/immutablex-go-lib/collections"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )

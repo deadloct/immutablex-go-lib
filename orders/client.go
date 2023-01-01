@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/deadloct/immutablex-cli/lib"
+	"github.com/deadloct/immutablex-go-lib/utils"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 )
 
@@ -50,7 +50,7 @@ type Client interface {
 
 func NewClientConfig(alchemyKey string) interface{} {
 	if alchemyKey == "" {
-		return RESTClientConfig{URL: lib.DefaultImmutableAPIURL}
+		return RESTClientConfig{URL: utils.DefaultImmutableAPIURL}
 	}
 
 	return AlchemyClientConfig{alchemyKey: alchemyKey}

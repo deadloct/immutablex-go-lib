@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/deadloct/immutablex-cli/lib"
+	"github.com/deadloct/immutablex-go-lib/utils"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,7 +21,7 @@ func PrintCollectionJSON(collection *api.Collection) {
 }
 
 func PrintCollectionStandard(collection *api.Collection) {
-	url := strings.Join([]string{lib.ImmutascanURL, "address", collection.Address}, "/")
+	url := strings.Join([]string{utils.ImmutascanURL, "address", collection.Address}, "/")
 	fmt.Printf("%s: %s\n", collection.Name, url)
 }
 

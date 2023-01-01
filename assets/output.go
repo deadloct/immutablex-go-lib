@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/deadloct/immutablex-cli/lib"
+	"github.com/deadloct/immutablex-go-lib/utils"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
@@ -34,7 +34,7 @@ func printAssetCommon(name, status, id, tokenID, collectionAddr string) {
 	}
 
 	url := strings.Join([]string{
-		lib.ImmutascanURL,
+		utils.ImmutascanURL,
 		"address",
 		collectionAddr,
 		tokenID,

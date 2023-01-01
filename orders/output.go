@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/deadloct/immutablex-cli/lib"
+	"github.com/deadloct/immutablex-go-lib/coinbase"
+	"github.com/deadloct/immutablex-go-lib/utils"
 	"github.com/immutable/imx-core-sdk-golang/imx/api"
 	log "github.com/sirupsen/logrus"
 )
@@ -33,9 +34,9 @@ func PrintOrderJSON(order api.Order) {
 }
 
 func PrintOrderNormal(order api.Order) {
-	url := strings.Join([]string{lib.ImmutascanURL, "order", fmt.Sprint(order.OrderId)}, "/")
+	url := strings.Join([]string{utils.ImmutascanURL, "order", fmt.Sprint(order.OrderId)}, "/")
 	ethPrice := getPrice(order)
-	fiatPrice := ethPrice * lib.GetCoinbaseClientInstance().LastSpotPrice
+	fiatPrice := ethPrice * coinbase.GetCoinbaseClientInstance().LastSpotPrice
 	fmt.Printf(`Order:
 - Status: %s
 - Price With Fees: %f ETH / %.2f USD
