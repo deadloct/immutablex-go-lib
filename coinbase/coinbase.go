@@ -5,11 +5,15 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-const BaseURL = "https://api.coinbase.com"
+const (
+	BaseURL  = "https://api.coinbase.com"
+	CacheFor = 30 * time.Second
+)
 
 var (
 	coinbaseClientInstance *CoinbaseClient
@@ -26,13 +30,10 @@ type CoinbaseSpotPrice struct {
 	Amount   string `json:"amount"`
 }
 
-func init() {
-	GetCoinbaseClientInstance().RetrieveSpotPrice()
-}
-
 type CoinbaseClient struct {
 	client        *http.Client
-	LastSpotPrice float64
+	lastSpotPrice float64
+	lastRetrieved time.Time
 }
 
 func GetCoinbaseClientInstance() *CoinbaseClient {
@@ -47,6 +48,10 @@ func GetCoinbaseClientInstance() *CoinbaseClient {
 }
 
 func (c *CoinbaseClient) RetrieveSpotPrice() float64 {
+	if time.Since(c.lastRetrieved) <= CacheFor {
+		return c.lastSpotPrice
+	}
+
 	resp, err := c.client.Get(BaseURL + "/v2/prices/ETH-USD/spot")
 	if err != nil {
 		log.Errorf("all ETH-USD prices will be zero b/c error retrieving spot price: %v", err)
@@ -60,11 +65,12 @@ func (c *CoinbaseClient) RetrieveSpotPrice() float64 {
 		return 0
 	}
 
-	c.LastSpotPrice, err = strconv.ParseFloat(result.Data.Amount, 64)
+	c.lastSpotPrice, err = strconv.ParseFloat(result.Data.Amount, 64)
 	if err != nil {
 		log.Errorf("all ETH-USD prices will be zero b/c error parsing spot price: %v", err)
 		return 0
 	}
 
-	return c.LastSpotPrice
+	c.lastRetrieved = time.Now()
+	return c.lastSpotPrice
 }
