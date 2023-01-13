@@ -36,7 +36,7 @@ func PrintOrderJSON(order api.Order) {
 func PrintOrderNormal(order api.Order) {
 	url := strings.Join([]string{utils.ImmutascanURL, "order", fmt.Sprint(order.OrderId)}, "/")
 	ethPrice := getPrice(order)
-	fiatPrice := ethPrice * coinbase.GetCoinbaseClientInstance().RetrieveSpotPrice()
+	fiatPrice := ethPrice * coinbase.GetCoinbaseClientInstance().RetrieveSpotPrice(coinbase.CurrencyUSD)
 	fmt.Printf(`Order:
 - Status: %s
 - Price With Fees: %f ETH / %.2f USD

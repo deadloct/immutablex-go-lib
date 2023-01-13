@@ -2,6 +2,7 @@ package coinbase
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -10,15 +11,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type Currency string
+
 const (
 	BaseURL  = "https://api.coinbase.com"
 	CacheFor = 30 * time.Second
+
+	CurrencyUSD Currency = "USD"
+	CurrencyEUR Currency = "EUR"
+	CurrencyGBP Currency = "GBP"
 )
 
 var (
 	coinbaseClientInstance *CoinbaseClient
 	muCoinbase             sync.Mutex
 )
+
+type SupportedCurrencies string
 
 type CoinbaseSpotPriceReponse struct {
 	Data CoinbaseSpotPrice `json:"data"`
@@ -30,10 +39,15 @@ type CoinbaseSpotPrice struct {
 	Amount   string `json:"amount"`
 }
 
+type Price struct {
+	Price         float64
+	LastRetrieved time.Time
+}
+
 type CoinbaseClient struct {
-	client        *http.Client
-	lastSpotPrice float64
-	lastRetrieved time.Time
+	client         *http.Client
+	lastSpotPrices map[Currency]Price
+	lastRetrieved  time.Time
 }
 
 func GetCoinbaseClientInstance() *CoinbaseClient {
@@ -41,36 +55,44 @@ func GetCoinbaseClientInstance() *CoinbaseClient {
 	defer muCoinbase.Unlock()
 
 	if coinbaseClientInstance == nil {
-		coinbaseClientInstance = &CoinbaseClient{client: &http.Client{}}
+		coinbaseClientInstance = &CoinbaseClient{
+			client:         &http.Client{},
+			lastSpotPrices: make(map[Currency]Price),
+		}
 	}
 
 	return coinbaseClientInstance
 }
 
-func (c *CoinbaseClient) RetrieveSpotPrice() float64 {
-	if time.Since(c.lastRetrieved) <= CacheFor {
-		return c.lastSpotPrice
+func (c *CoinbaseClient) RetrieveSpotPrice(currency Currency) float64 {
+	if currency == "" {
+		currency = CurrencyUSD
 	}
 
-	resp, err := c.client.Get(BaseURL + "/v2/prices/ETH-USD/spot")
+	last, ok := c.lastSpotPrices[currency]
+	if ok && time.Since(last.LastRetrieved) <= CacheFor {
+		return c.lastSpotPrices[currency].Price
+	}
+
+	resp, err := c.client.Get(fmt.Sprintf("%s/v2/prices/ETH-%s/spot", BaseURL, currency))
 	if err != nil {
-		log.Errorf("all ETH-USD prices will be zero b/c error retrieving spot price: %v", err)
+		log.Errorf("all ETH-%s prices will be zero b/c error retrieving spot price: %v", currency, err)
 		return 0
 	}
 	defer resp.Body.Close()
 
 	var result CoinbaseSpotPriceReponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Errorf("all ETH-USD prices will be zero b/c error parsing spot price: %v", err)
+		log.Errorf("all ETH-%s prices will be zero b/c error parsing spot price: %v", currency, err)
 		return 0
 	}
 
-	c.lastSpotPrice, err = strconv.ParseFloat(result.Data.Amount, 64)
+	amount, err := strconv.ParseFloat(result.Data.Amount, 64)
 	if err != nil {
 		log.Errorf("all ETH-USD prices will be zero b/c error parsing spot price: %v", err)
 		return 0
 	}
 
-	c.lastRetrieved = time.Now()
-	return c.lastSpotPrice
+	c.lastSpotPrices[currency] = Price{Price: amount, LastRetrieved: time.Now()}
+	return amount
 }
