@@ -35,14 +35,15 @@ func PrintOrderJSON(order api.Order) {
 
 func PrintOrderNormal(order api.Order) {
 	url := strings.Join([]string{utils.ImmutascanURL, "order", fmt.Sprint(order.OrderId)}, "/")
-	ethPrice := getPrice(order)
-	fiatPrice := ethPrice * coinbase.GetCoinbaseClientInstance().RetrieveSpotPrice(coinbase.CurrencyUSD)
+	price := getPrice(order)
+	symbol := coinbase.CryptoSymbol(*order.GetBuy().Data.Symbol)
+	fiatPrice := price * coinbase.GetCoinbaseClientInstance().RetrieveSpotPrice(symbol, coinbase.FiatUSD)
 	fmt.Printf(`Order:
 - Status: %s
-- Price With Fees: %f ETH / %.2f USD
+- Price With Fees: %f %s / %.2f %s
 - User: %s
 - Date: %s
-- Immutascan: %s%s`, order.Status, ethPrice, fiatPrice, order.User, order.GetUpdatedTimestamp(), url, "\n\n")
+- Immutascan: %s%s`, order.Status, price, symbol, fiatPrice, coinbase.FiatUSD, order.User, order.GetUpdatedTimestamp(), url, "\n\n")
 }
 
 func PrintOrders(orders []api.Order, output string) {

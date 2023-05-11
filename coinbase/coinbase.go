@@ -11,15 +11,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Currency string
+type CryptoSymbol string
+
+type FiatSymbol string
 
 const (
 	BaseURL  = "https://api.coinbase.com"
 	CacheFor = 30 * time.Second
 
-	CurrencyUSD Currency = "USD"
-	CurrencyEUR Currency = "EUR"
-	CurrencyGBP Currency = "GBP"
+	CryptoETH  CryptoSymbol = "ETH"
+	CryptoIMX  CryptoSymbol = "IMX"
+	CryptoUSDC CryptoSymbol = "USDC"
+
+	FiatUSD FiatSymbol = "USD"
+	FiatEUR FiatSymbol = "EUR"
+	FiatGBP FiatSymbol = "GBP"
 )
 
 var (
@@ -46,8 +52,7 @@ type Price struct {
 
 type CoinbaseClient struct {
 	client         *http.Client
-	lastSpotPrices map[Currency]Price
-	lastRetrieved  time.Time
+	lastSpotPrices map[string]Price
 }
 
 func GetCoinbaseClientInstance() *CoinbaseClient {
@@ -57,42 +62,52 @@ func GetCoinbaseClientInstance() *CoinbaseClient {
 	if coinbaseClientInstance == nil {
 		coinbaseClientInstance = &CoinbaseClient{
 			client:         &http.Client{},
-			lastSpotPrices: make(map[Currency]Price),
+			lastSpotPrices: make(map[string]Price),
 		}
 	}
 
 	return coinbaseClientInstance
 }
 
-func (c *CoinbaseClient) RetrieveSpotPrice(currency Currency) float64 {
-	if currency == "" {
-		currency = CurrencyUSD
+func (c *CoinbaseClient) RetrieveSpotPrice(crypto CryptoSymbol, fiat FiatSymbol) float64 {
+	if fiat == "" {
+		fiat = FiatUSD
 	}
 
-	last, ok := c.lastSpotPrices[currency]
+	if crypto == "" {
+		crypto = CryptoETH
+	}
+
+	spotKey := c.getSpotKey(fiat, crypto)
+
+	last, ok := c.lastSpotPrices[spotKey]
 	if ok && time.Since(last.LastRetrieved) <= CacheFor {
-		return c.lastSpotPrices[currency].Price
+		return c.lastSpotPrices[spotKey].Price
 	}
 
-	resp, err := c.client.Get(fmt.Sprintf("%s/v2/prices/ETH-%s/spot", BaseURL, currency))
+	resp, err := c.client.Get(fmt.Sprintf("%s/v2/prices/%s-%s/spot", BaseURL, crypto, fiat))
 	if err != nil {
-		log.Errorf("all ETH-%s prices will be zero b/c error retrieving spot price: %v", currency, err)
+		log.Errorf("all %s-%s prices will be zero b/c error retrieving spot price: %v", crypto, fiat, err)
 		return 0
 	}
 	defer resp.Body.Close()
 
 	var result CoinbaseSpotPriceReponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Errorf("all ETH-%s prices will be zero b/c error parsing spot price: %v", currency, err)
+		log.Errorf("all %s-%s prices will be zero b/c error parsing spot price: %v", crypto, fiat, err)
 		return 0
 	}
 
 	amount, err := strconv.ParseFloat(result.Data.Amount, 64)
 	if err != nil {
-		log.Errorf("all ETH-USD prices will be zero b/c error parsing spot price: %v", err)
+		log.Errorf("all %s-%s prices will be zero b/c error parsing spot price: %v", crypto, fiat, err)
 		return 0
 	}
 
-	c.lastSpotPrices[currency] = Price{Price: amount, LastRetrieved: time.Now()}
+	c.lastSpotPrices[spotKey] = Price{Price: amount, LastRetrieved: time.Now()}
 	return amount
+}
+
+func (c *CoinbaseClient) getSpotKey(f FiatSymbol, cr CryptoSymbol) string {
+	return fmt.Sprintf("%s-%s", f, cr)
 }
