@@ -46,7 +46,7 @@ func (c *RESTClient) GetAsset(ctx context.Context, tokenAddress, tokenID string,
 		tokenAddress = s.Addr
 	}
 
-	log.Debugf("fetching asset id %s from collection %s (with fees:%b)", tokenAddress, tokenID, includeFees)
+	log.Debugf("fetching asset id %s from collection %s (with fees:%t)", tokenAddress, tokenID, includeFees)
 	url := strings.Join([]string{c.url + GetAssetEndpoint, tokenAddress, tokenID}, "/")
 	resp, err := c.client.Get(url)
 	if err != nil {

@@ -38,7 +38,7 @@ func (am *AlchemyClient) GetAsset(ctx context.Context, tokenAddress, tokenID str
 		tokenAddress = s.Addr
 	}
 
-	log.Debugf("fetching asset id %s from collection %s (with fees:%b)", tokenAddress, tokenID, includeFees)
+	log.Debugf("fetching asset id %s from collection %s (with fees:%t)", tokenAddress, tokenID, includeFees)
 	return am.client.GetClient().GetAsset(ctx, tokenAddress, tokenID, &includeFees)
 }
 
