@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ListOrdersEndpoint = "/v1/orders"
+	ListOrdersEndpoint = "/v3/orders"
 )
 
 type RESTClientConfig struct {
